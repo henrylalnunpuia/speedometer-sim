@@ -1,0 +1,112 @@
+<div id="simulation-container" style="max-width: 100%; font-family: sans-serif; background: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #ddd; margin-top: 20px;">
+  <h3 style="margin-top: 0;">Car Speedometer Simulation</h3>
+  <p style="font-size: 14px; color: #555;">
+    This simulation demonstrates <strong>instantaneous velocity</strong>. Even when frozen at a exact millisecond interval ($\Delta t = 0$), the car possesses an inherent intensity of motion (Velocity) at that specific point.
+  </p>
+
+  <div style="position: relative; width: 100%; height: 80px; background: #333; border-top: 4px dashed #fff; border-bottom: 4px dashed #fff; border-radius: 4px; overflow: hidden; margin-bottom: 15px;">
+    <div style="position: absolute; width: 100%; top: 50%; border-top: 2px dashed #aaa; transform: translateY(-50%);"></div>
+    <div id="sim-car" style="position: absolute; left: 0px; top: 50%; transform: translateY(-50%); font-size: 32px; transition: left 0.1s linear; will-change: left;">🚗</div>
+  </div>
+
+  <div style="display: flex; gap: 20px; margin-bottom: 20px; justify-content: space-around; background: #fff; padding: 10px; border-radius: 6px; border: 1px solid #eee;">
+    <div style="text-align: center;">
+      <span style="font-size: 12px; color: #777; display: block; text-transform: uppercase;">Time (t)</span>
+      <span id="display-time" style="font-size: 20px; font-weight: bold; color: #333;">0.00 s</span>
+    </div>
+    <div style="text-align: center;">
+      <span style="font-size: 12px; color: #777; display: block; text-transform: uppercase;">Position (x)</span>
+      <span id="display-pos" style="font-size: 20px; font-weight: bold; color: #2196F3;">0.00 m</span>
+    </div>
+    <div style="text-align: center;">
+      <span style="font-size: 12px; color: #777; display: block; text-transform: uppercase;">Speed (dx/dt)</span>
+      <span id="display-speed" style="font-size: 20px; font-weight: bold; color: #4CAF50;">0.00 m/s</span>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+    <button id="btn-start" style="padding: 10px 20px; font-size: 14px; font-weight: bold; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">Start</button>
+    <button id="btn-pause" style="padding: 10px 20px; font-size: 14px; font-weight: bold; background: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer;" disabled>Freeze Frame</button>
+    <button id="btn-reset" style="padding: 10px 20px; font-size: 14px; font-weight: bold; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">Reset</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  const car = document.getElementById('sim-car');
+  const txtTime = document.getElementById('display-time');
+  const txtPos = document.getElementById('display-pos');
+  const txtSpeed = document.getElementById('display-speed');
+  const btnStart = document.getElementById('btn-start');
+  const btnPause = document.getElementById('btn-pause');
+  const btnReset = document.getElementById('btn-reset');
+
+  let animationFrameId = null;
+  let startTime = null;
+  let elapsedPauseTime = 0;
+  let isRunning = false;
+
+  // Equation parameters: x(t) = 5 * t^2
+  // Velocity equation: v(t) = 10 * t
+  function updateMetrics(t) {
+    const position = 5 * (t * t);
+    const speed = 10 * t;
+
+    txtTime.innerText = t.toFixed(2) + ' s';
+    txtPos.innerText = position.toFixed(2) + ' m';
+    txtSpeed.innerText = speed.toFixed(2) + ' m/s';
+
+    // Scale position map visually inside track container (caps at max container boundary width)
+    const trackWidth = car.parentElement.clientWidth - 45; 
+    const visualLeft = Math.min((position / 45) * trackWidth, trackWidth); 
+    car.style.left = visualLeft + 'px';
+
+    if (visualLeft >= trackWidth) {
+      stopSim();
+    }
+  }
+
+  function loop(timestamp) {
+    if (!startTime) startTime = timestamp - elapsedPauseTime;
+    const runtime = (timestamp - startTime) / 1000; // translate milliseconds to seconds
+    
+    updateMetrics(runtime);
+
+    if (isRunning) {
+      animationFrameId = requestAnimationFrame(loop);
+    }
+  }
+
+  function startSim() {
+    if (!isRunning) {
+      isRunning = true;
+      btnStart.disabled = true;
+      btnPause.disabled = false;
+      animationFrameId = requestAnimationFrame(loop);
+    }
+  }
+
+  function stopSim() {
+    isRunning = false;
+    btnStart.disabled = false;
+    btnPause.disabled = true;
+    cancelAnimationFrame(animationFrameId);
+  }
+
+  btnStart.addEventListener('click', startSim);
+  
+  btnPause.addEventListener('click', () => {
+    if (isRunning) {
+      stopSim();
+      if (startTime) elapsedPauseTime = performance.now() - startTime;
+    }
+  });
+
+  btnReset.addEventListener('click', () => {
+    stopSim();
+    startTime = null;
+    elapsedPauseTime = 0;
+    updateMetrics(0);
+  });
+})();
+</script>
